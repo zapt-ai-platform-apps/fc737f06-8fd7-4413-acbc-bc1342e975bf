@@ -1,4 +1,4 @@
-import { createSignal, onMount, createEffect, For, Show } from 'solid-js';
+import { createSignal, onMount, onCleanup, For, Show } from 'solid-js';
 import { createEvent, supabase } from './supabaseClient';
 import { Auth } from '@supabase/auth-ui-solid';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
@@ -21,10 +21,10 @@ function App() {
     }
   }
 
-  onMount(checkUserSignedIn)
+  onMount(() => {
+    checkUserSignedIn();
 
-  createEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((_, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       if (session?.user) {
         setUser(session.user)
         setCurrentPage('famousPersonSelection')
@@ -34,10 +34,10 @@ function App() {
       }
     })
 
-    return () => {
-      authListener.unsubscribe()
-    }
-  })
+    onCleanup(() => {
+      subscription.unsubscribe()
+    })
+  });
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
