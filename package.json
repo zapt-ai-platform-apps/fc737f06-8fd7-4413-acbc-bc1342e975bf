@@ -1,7 +1,7 @@
 {
   "name": "conversation-with-famous-person",
   "version": "1.0.0",
-  "description": "SolidJS app that allows users to converse with famous people using AI.",
+  "description": "SolidJS app that allows users to converse with famous people using AI and get real-time weather information.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,10 +9,10 @@
     "serve": "vite preview"
   },
   "dependencies": {
-    "solid-js": "^1.8.22",
     "@supabase/auth-ui-shared": "^0.1.8",
     "@supabase/auth-ui-solid": "^0.3.8",
     "@supabase/supabase-js": "^2.45.4",
+    "solid-js": "^1.8.22",
     "solid-markdown": "^2.0.13"
   },
   "devDependencies": {

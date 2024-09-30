@@ -12,6 +12,8 @@ function App() {
   const [currentQuestion, setCurrentQuestion] = createSignal('');
   const [conversation, setConversation] = createSignal([]);
   const [loading, setLoading] = createSignal(false);
+  const [weatherCity, setWeatherCity] = createSignal('');
+  const [showWeatherModal, setShowWeatherModal] = createSignal(false);
 
   const checkUserSignedIn = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -94,6 +96,35 @@ function App() {
     setCurrentPage('homePage');
   };
 
+  const handleGetWeather = async () => {
+    if (weatherCity().trim() === '') return;
+
+    setLoading(true);
+    setShowWeatherModal(false);
+
+    try {
+      const result = await createEvent('call_api', {
+        api_id: 'ea764266-2a18-41c9-b7b0-dac80fed3797',
+        instructions: `Get the current weather for ${weatherCity()}`
+      });
+
+      if (result) {
+        const weatherInfo = `Current weather in ${weatherCity()}:\nTemperature: ${result.temp}°C\nHumidity: ${result.humidity}%\nWind Speed: ${result.wind_speed} m/s\nDescription: ${result.cloud_pct}% cloud cover`;
+        setConversation([...conversation(), { role: 'system', content: weatherInfo }]);
+        setWeatherCity('');
+      } else {
+        setConversation([...conversation(), { role: 'system', content: `Could not retrieve weather information for ${weatherCity()}.` }]);
+        setWeatherCity('');
+      }
+    } catch (error) {
+      console.error('Error fetching weather:', error);
+      setConversation([...conversation(), { role: 'system', content: `Error fetching weather information for ${weatherCity()}.` }]);
+      setWeatherCity('');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div class="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-4">
       <Show when={currentPage() === 'login'}>
@@ -138,7 +169,7 @@ function App() {
                 placeholder="Enter the name of the famous person"
                 value={famousPerson()}
                 onInput={(e) => setFamousPerson(e.target.value)}
-                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent box-border"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent box-border text-gray-700"
               />
               <button
                 onClick={handleStartConversation}
@@ -156,7 +187,7 @@ function App() {
                 <For each={conversation()}>
                   {(message) => (
                     <div class={`mb-2 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
-                      <p class="font-semibold">{message.role === 'user' ? 'You' : famousPerson()}</p>
+                      <p class="font-semibold">{message.role === 'user' ? 'You' : message.role === 'assistant' ? famousPerson() : 'System'}</p>
                       <div class="inline-block bg-gray-100 p-3 rounded-lg">
                         <SolidMarkdown children={message.content} />
                       </div>
@@ -164,7 +195,7 @@ function App() {
                   )}
                 </For>
                 <Show when={loading()}>
-                  <div class="text-center text-gray-500">Generating response...</div>
+                  <div class="text-center text-gray-500">Processing...</div>
                 </Show>
               </div>
               <input
@@ -177,10 +208,10 @@ function App() {
                     handleAskQuestion();
                   }
                 }}
-                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent box-border mb-2"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent box-border mb-2 text-gray-700"
                 disabled={loading()}
               />
-              <div class="flex space-x-4">
+              <div class="flex flex-wrap space-x-4">
                 <button
                   onClick={handleAskQuestion}
                   class={`flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer ${
@@ -189,6 +220,15 @@ function App() {
                   disabled={loading()}
                 >
                   Ask Question
+                </button>
+                <button
+                  onClick={() => setShowWeatherModal(true)}
+                  class={`flex-1 px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer ${
+                    loading() ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  disabled={loading()}
+                >
+                  Get Weather
                 </button>
                 <button
                   onClick={handleResetConversation}
@@ -203,6 +243,38 @@ function App() {
                   Quit
                 </button>
               </div>
+
+              <Show when={showWeatherModal()}>
+                <div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                  <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-bold mb-4 text-purple-600">Get Weather Information</h3>
+                    <input
+                      type="text"
+                      placeholder="Enter city name"
+                      value={weatherCity()}
+                      onInput={(e) => setWeatherCity(e.target.value)}
+                      class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent box-border mb-4 text-gray-700"
+                    />
+                    <div class="flex space-x-4">
+                      <button
+                        onClick={handleGetWeather}
+                        class={`flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer ${
+                          loading() ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                        disabled={loading()}
+                      >
+                        Get Weather
+                      </button>
+                      <button
+                        onClick={() => setShowWeatherModal(false)}
+                        class="flex-1 px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </Show>
             </div>
           </Show>
 
