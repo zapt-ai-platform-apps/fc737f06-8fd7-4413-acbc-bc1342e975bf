@@ -11,6 +11,6 @@ export default defineConfig({
     conditions: ['development', 'browser'],
   },
   optimizeDeps: {
-    exclude: [] // Add any server-only dependencies here
-  }
+    exclude: [], // Add any server-only dependencies here
+  },
 });

@@ -3,6 +3,8 @@ import { createEvent, supabase } from './supabaseClient';
 import { Auth } from '@supabase/auth-ui-solid';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { SolidMarkdown } from 'solid-markdown';
+import { saveAs } from 'file-saver';
+import { Document, Packer, Paragraph, TextRun } from 'docx';
 
 function App() {
   const [user, setUser] = createSignal(null);
@@ -94,6 +96,37 @@ function App() {
     setCurrentPage('homePage');
   };
 
+  const handleSaveConversation = async () => {
+    const doc = new Document();
+
+    conversation().forEach((message) => {
+      doc.addSection({
+        properties: {},
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: message.role === 'user' ? 'You:' : `${famousPerson()}:`,
+                bold: true,
+              }),
+            ],
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: message.content,
+              }),
+            ],
+          }),
+          new Paragraph({}),
+        ],
+      });
+    });
+
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `${famousPerson()} Conversation.docx`);
+  };
+
   return (
     <div class="min-h-screen bg-gradient-to-br from-green-100 to-blue-100 p-6 text-gray-800">
       <Show when={currentPage() === 'login'}>
@@ -113,6 +146,9 @@ function App() {
               appearance={{ theme: ThemeSupa }}
               providers={['google', 'facebook', 'apple']}
               magicLink={true}
+              onAuth={() => {
+                checkUserSignedIn();
+              }}
             />
           </div>
         </div>
@@ -121,7 +157,7 @@ function App() {
       <Show when={currentPage() !== 'login'}>
         <div class="max-w-4xl mx-auto h-full flex flex-col">
           <div class="flex justify-between items-center mb-10">
-            <h1 class="text-6xl font-extrabold text-green-600">Talk to a Famous Person</h1>
+            <h1 class="text-6xl font-extrabold text-green-600">Ask Einstein</h1>
             <button
               class="bg-red-500 hover:bg-red-600 text-white font-semibold py-4 px-10 rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-red-400 transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer"
               onClick={handleSignOut}
@@ -193,6 +229,12 @@ function App() {
               </div>
 
               <div class="flex mt-6 space-x-4">
+                <button
+                  onClick={handleSaveConversation}
+                  class="flex-1 px-8 py-4 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer text-xl font-semibold"
+                >
+                  Save Conversation
+                </button>
                 <button
                   onClick={handleResetConversation}
                   class="flex-1 px-8 py-4 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer text-xl font-semibold"
